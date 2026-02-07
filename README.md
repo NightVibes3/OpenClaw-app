@@ -31,6 +31,7 @@
 - [Usage](#usage)
 - [Troubleshooting](#troubleshooting)
 - [Tech Stack](#tech-stack)
+- [Push Notifications](#push-notifications)
 
 ---
 
@@ -48,6 +49,7 @@ OpenClaw is a native iOS application that enables real-time voice conversations 
 - **Secure Credential Storage** - API keys stored safely in iOS Keychain
 - **Network Monitoring** - Automatic detection of connectivity status
 - **Dark Mode Design** - Elegant warm-toned dark interface inspired by Anthropic's design language
+- **Push Notifications** - Receive notifications from OpenClaw Gateway via APNs
 
 ---
 
@@ -58,7 +60,9 @@ OpenClaw follows a clean MVVM (Model-View-ViewModel) architecture with clear sep
 ```
 OpenClaw/
 ├── App/
-│   └── AppState.swift              # Global application state
+│   ├── AppState.swift              # Global application state
+│   ├── AppDelegate.swift           # APNs registration callbacks
+│   └── NotificationDelegate.swift  # Foreground notification handling
 ├── Extensions/
 │   └── Color+Theme.swift           # Color palette and theming
 ├── Features/
@@ -77,9 +81,19 @@ OpenClaw/
 │   ├── ConversationManager.swift   # ElevenLabs SDK wrapper
 │   ├── KeychainManager.swift       # Secure credential storage
 │   ├── NetworkMonitor.swift        # Connectivity monitoring
-│   └── TokenService.swift          # API token management
+│   ├── TokenService.swift          # API token management
+│   ├── PushNotificationManager.swift   # APNs registration and permissions
+│   └── GatewayNotificationService.swift # Device registration with Gateway
 ├── Assets.xcassets                 # Images, colors, app icon
 └── OpenClawApp.swift               # App entry point
+
+Gateway/                            # OpenClaw Gateway Plugin
+├── index.ts                        # Plugin entry point
+├── apns-notifier.ts                # HTTP/2 APNs client
+├── ios-hooks.ts                    # Device registration hooks
+├── openclaw.plugin.json            # Plugin manifest
+├── README.md                       # Plugin documentation
+└── SETUP_DGX_SPARK.md              # Setup guide for DGX Spark
 ```
 
 ### Key Components
@@ -91,6 +105,8 @@ OpenClaw/
 | **KeychainManager** | Securely stores and retrieves API keys and agent IDs |
 | **NetworkMonitor** | Monitors network connectivity using NWPathMonitor |
 | **AudioSessionManager** | Configures AVAudioSession for voice conversations |
+| **PushNotificationManager** | Manages APNs registration, permissions, and device tokens |
+| **GatewayNotificationService** | Registers device with OpenClaw Gateway for push notifications |
 
 ### Data Flow
 
@@ -484,6 +500,94 @@ If you're using a custom LLM endpoint:
 | **Security.framework** | Keychain credential storage |
 | **Network.framework** | Connectivity monitoring |
 | **AVFoundation** | Audio session management |
+| **UserNotifications** | Push notification handling |
+
+---
+
+## Push Notifications
+
+OpenClaw supports push notifications from the OpenClaw Gateway, allowing the AI agent to proactively reach out to users on their iOS devices.
+
+### How It Works
+
+```
+┌─────────────┐         ┌─────────────────┐         ┌─────────────┐
+│  OpenClaw   │         │   OpenClaw      │         │   Apple     │
+│  iOS App    │         │   Gateway       │         │   APNs      │
+└──────┬──────┘         └────────┬────────┘         └──────┬──────┘
+       │                         │                         │
+       │  Register Device Token  │                         │
+       │────────────────────────►│                         │
+       │                         │                         │
+       │                         │  Agent calls            │
+       │                         │  send_ios_notification  │
+       │                         │                         │
+       │                         │  HTTP/2 + JWT Auth      │
+       │                         │────────────────────────►│
+       │                         │                         │
+       │  Push Notification      │                         │
+       │◄─────────────────────────────────────────────────│
+       │                         │                         │
+```
+
+### Gateway Plugin Setup
+
+The `Gateway/` folder contains the OpenClaw Gateway plugin for sending push notifications:
+
+1. **Copy plugin to Gateway server:**
+   ```bash
+   cp -r Gateway/ ~/.openclaw/extensions/ios-push-notifications/
+   ```
+
+2. **Create APNs Key** in [Apple Developer Portal](https://developer.apple.com/account/resources/authkeys/list):
+   - Download the `.p8` key file
+   - Note the Key ID and Team ID
+
+3. **Configure in `~/.openclaw/openclaw.json`:**
+   ```json
+   {
+     "plugins": {
+       "load": {
+         "paths": ["~/.openclaw/extensions/ios-push-notifications"]
+       },
+       "entries": {
+         "ios-push-notifications": {
+           "enabled": true,
+           "config": {
+             "apns": {
+               "keyPath": "/path/to/AuthKey_XXXXXX.p8",
+               "keyId": "YOUR_KEY_ID",
+               "teamId": "YOUR_TEAM_ID",
+               "bundleId": "carc.ai.OpenClaw",
+               "sandbox": true
+             }
+           }
+         }
+       }
+     }
+   }
+   ```
+
+4. **Restart Gateway:**
+   ```bash
+   openclaw gateway restart
+   ```
+
+### Sending Notifications
+
+The OpenClaw agent can send notifications using the `send_ios_notification` tool:
+
+```
+"Send a push notification to device token ABC123... with title 'Hello' and body 'Your task is complete!'"
+```
+
+### iOS App Configuration
+
+1. Enable Push Notifications in **Signing & Capabilities**
+2. The app automatically requests notification permissions on launch
+3. Device token is displayed in Xcode console for testing
+
+For detailed setup instructions, see [Gateway/SETUP_DGX_SPARK.md](Gateway/SETUP_DGX_SPARK.md).
 
 ---
 
