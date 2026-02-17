@@ -32,6 +32,8 @@
 - [Troubleshooting](#troubleshooting)
 - [Tech Stack](#tech-stack)
 - [Push Notifications](#push-notifications)
+- [TODO List](#todo-list)
+- [Research Lab](#research-lab)
 
 ---
 
@@ -50,6 +52,8 @@ OpenClaw is a native iOS application that enables real-time voice conversations 
 - **Network Monitoring** - Automatic detection of connectivity status
 - **Dark Mode Design** - Elegant warm-toned dark interface inspired by Anthropic's design language
 - **Push Notifications** - Receive notifications from OpenClaw Gateway via APNs
+- **TODO List** - Bidirectional sync with OpenClaw Gateway for task management
+- **Research Lab** - Local storage for organizing research projects and notes
 
 ---
 
@@ -71,11 +75,20 @@ OpenClaw/
 │   │   ├── ConversationViewModel.swift # Conversation business logic
 │   │   ├── MessageBubbleView.swift     # Chat message component
 │   │   └── OrbVisualizerView.swift     # Animated voice visualizer
+│   ├── TodoList/
+│   │   ├── TodoListView.swift          # TODO list UI with edit sheet
+│   │   └── TodoListViewModel.swift     # TODO business logic & Gateway sync
+│   ├── ResearchLab/
+│   │   ├── ResearchLabView.swift       # Research projects list
+│   │   ├── ResearchLabViewModel.swift  # Research management logic
+│   │   └── ProjectDetailView.swift     # Individual project view
 │   └── Settings/
 │       ├── SettingsView.swift          # Settings UI
 │       └── SettingsViewModel.swift     # Settings business logic
 ├── Models/
-│   └── ConversationTypes.swift     # Data models and types
+│   ├── ConversationTypes.swift     # Conversation data models
+│   ├── TodoTypes.swift             # TODO item, priority, and list models
+│   └── ResearchTypes.swift         # Research project models
 ├── Services/
 │   ├── AudioSessionManager.swift   # Audio session configuration
 │   ├── ConversationManager.swift   # ElevenLabs SDK wrapper
@@ -83,7 +96,9 @@ OpenClaw/
 │   ├── NetworkMonitor.swift        # Connectivity monitoring
 │   ├── TokenService.swift          # API token management
 │   ├── PushNotificationManager.swift   # APNs registration and permissions
-│   └── GatewayNotificationService.swift # Device registration with Gateway
+│   ├── GatewayNotificationService.swift # Device registration with Gateway
+│   ├── TodoService.swift           # TODO sync with Gateway (JSON API)
+│   └── ResearchStorageService.swift # Local research project storage
 ├── Assets.xcassets                 # Images, colors, app icon
 └── OpenClawApp.swift               # App entry point
 
@@ -93,7 +108,8 @@ Gateway/                            # OpenClaw Gateway Plugin
 ├── ios-hooks.ts                    # Device registration hooks
 ├── openclaw.plugin.json            # Plugin manifest
 ├── README.md                       # Plugin documentation
-└── SETUP_DGX_SPARK.md              # Setup guide for DGX Spark
+├── SETUP_DGX_SPARK.md              # Setup guide for DGX Spark
+└── TODO_SKILL.md                   # AI skill instructions for TODO management
 ```
 
 ### Key Components
@@ -107,6 +123,8 @@ Gateway/                            # OpenClaw Gateway Plugin
 | **AudioSessionManager** | Configures AVAudioSession for voice conversations |
 | **PushNotificationManager** | Manages APNs registration, permissions, and device tokens |
 | **GatewayNotificationService** | Registers device with OpenClaw Gateway for push notifications |
+| **TodoService** | Actor-based service for bidirectional TODO sync with Gateway via JSON API |
+| **ResearchStorageService** | Local storage service for research projects using UserDefaults |
 
 ### Data Flow
 
@@ -588,6 +606,95 @@ The OpenClaw agent can send notifications using the `send_ios_notification` tool
 3. Device token is displayed in Xcode console for testing
 
 For detailed setup instructions, see [Gateway/SETUP_DGX_SPARK.md](Gateway/SETUP_DGX_SPARK.md).
+
+---
+
+## TODO List
+
+OpenClaw includes a full-featured TODO list that syncs bidirectionally with the OpenClaw Gateway, allowing both the iOS app and AI agent to manage tasks.
+
+### Features
+
+- **Bidirectional Sync** - Changes sync between iOS app and Gateway in real-time
+- **Structured Markdown Format** - Tasks stored in human-readable markdown with checkbox syntax
+- **Priority Levels** - High (red), Medium (yellow), Low (green) with visual badges
+- **Full Field Support** - Title, description, priority, created date, completed date
+- **Edit Sheet** - Full editing interface for all task fields
+- **Local Fallback** - Works offline with local storage
+
+### TODO Format
+
+Tasks are stored in a structured markdown format:
+
+```markdown
+# TODO
+
+## Active
+- [ ] Task title
+  description: Optional longer description
+  priority: high|medium|low
+  created: 2024-02-17
+
+## Completed
+- [x] Finished task
+  completed: 2024-02-17
+```
+
+### Gateway Sync Setup
+
+1. **Start the TODO sync server** on your Gateway (port 3333)
+
+2. **Configure in iOS Settings:**
+   - Endpoint: `http://your-gateway-ip:3333/todo`
+
+3. **API Endpoints:**
+
+   | Method | Endpoint | Purpose |
+   |--------|----------|---------|
+   | GET | `/health` | Health check |
+   | GET | `/todo` | Retrieve TODO.md |
+   | PUT | `/todo` | Update TODO.md |
+
+4. **Request Format (PUT):**
+   ```json
+   {
+     "content": "# TODO\n\n## Active\n- [ ] Task\n..."
+   }
+   ```
+
+### AI Agent Integration
+
+The Gateway includes a skill instruction file (`TODO_SKILL.md`) that teaches the AI agent how to manage tasks. The agent can:
+
+- Add new tasks with priority and description
+- Mark tasks as completed
+- List tasks with priority indicators
+- Update task details
+
+Example agent command:
+```
+"Add a high priority task: Review pull request - Need to check the authentication changes"
+```
+
+---
+
+## Research Lab
+
+The Research Lab feature provides local storage for organizing research projects, papers, and notes.
+
+### Features
+
+- **Project Organization** - Create and manage research projects
+- **Local Storage** - All data stored securely on device
+- **Project Details** - View and edit project metadata
+- **Clean Interface** - Matches the app's dark mode design
+
+### Usage
+
+1. Navigate to the **Research Lab** tab
+2. Tap **+** to create a new project
+3. Add project details (title, description, notes)
+4. Tap a project to view details
 
 ---
 
