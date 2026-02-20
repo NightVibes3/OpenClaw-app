@@ -1,0 +1,158 @@
+name: Build IPA
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: macos-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Checkout Gateway submodule
+        run: |
+          git submodule update --init --recursive
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      
+      - name: Install Gateway dependencies
+        run: |
+          cd Gateway
+          npm install
+      
+      - name: Setup Xcode
+        run: |
+          xcodebuild -version
+          xcodegen --version || brew install xcodegen
+      
+      - name: Generate scheme if needed
+        run: |
+          if [ ! -d "OpenClaw.xcodeproj/xcshareddata/xcschemes" ]; then
+            mkdir -p OpenClaw.xcodeproj/xcshareddata/xcschemes
+            cat > OpenClaw.xcodeproj/xcshareddata/xcschemes/OpenClaw.xcscheme << 'EOF'
+            <?xml version="1.0" encoding="UTF-8"?>
+            <Scheme
+               LastUpgradeVersion = "1500"
+               version = "1.7">
+               <BuildAction
+                  parallelizeBuildables = "YES"
+                  buildImplicitDependencies = "YES">
+                  <BuildActionEntries>
+                     <BuildActionEntry
+                        buildForTesting = "YES"
+                        buildForRunning = "YES"
+                        buildForProfiling = "YES"
+                        buildForArchiving = "YES"
+                        buildForAnalyzing = "YES">
+                        <BuildableReference
+                           BuildableIdentifier = "primary"
+                           BlueprintIdentifier = "CC7FE1C62F351746005622EC"
+                           BuildableName = "OpenClaw.app"
+                           BlueprintName = "OpenClaw"
+                           ReferencedContainer = "container:OpenClaw.xcodeproj">
+                        </BuildableReference>
+                     </BuildActionEntry>
+                  </BuildActionEntries>
+               </BuildAction>
+               <TestAction
+                  buildConfiguration = "Debug"
+                  selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"
+                  selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
+                  shouldUseLaunchSchemeArgsEnv = "YES"
+                  shouldAutocreateTestPlan = "YES">
+               </TestAction>
+               <LaunchAction
+                  buildConfiguration = "Debug"
+                  selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"
+                  selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
+                  launchStyle = "0"
+                  useCustomWorkingDirectory = "NO"
+                  ignoresPersistentStateOnLaunch = "NO"
+                  debugDocumentVersioning = "YES"
+                  debugServiceExtension = "internal"
+                  allowLocationSimulation = "YES">
+                  <BuildableProductRunnable
+                     runnableDebuggingMode = "0">
+                     <BuildableReference
+                        BuildableIdentifier = "primary"
+                        BlueprintIdentifier = "CC7FE1C62F351746005622EC"
+                        BuildableName = "OpenClaw.app"
+                        BlueprintName = "OpenClaw"
+                        ReferencedContainer = "container:OpenClaw.xcodeproj">
+                     </BuildableReference>
+                  </BuildableProductRunnable>
+               </LaunchAction>
+               <ProfileAction
+                  buildConfiguration = "Debug"
+                  shouldUseLaunchSchemeArgsEnv = "YES"
+                  savedToolIdentifier = ""
+                  useCustomWorkingDirectory = "NO"
+                  debugDocumentVersioning = "YES">
+                  <BuildableProductRunnable
+                     runnableDebuggingMode = "0">
+                     <BuildableReference
+                        BuildableIdentifier = "primary"
+                        BlueprintIdentifier = "CC7FE1C62F351746005622EC"
+                        BuildableName = "OpenClaw.app"
+                        BlueprintName = "OpenClaw"
+                        ReferencedContainer = "container:OpenClaw.xcodeproj">
+                     </BuildableReference>
+                  </BuildableProductRunnable>
+               </ProfileAction>
+               <AnalyzeAction
+                  buildConfiguration = "Debug">
+               </AnalyzeAction>
+               <ArchiveAction
+                  buildConfiguration = "Debug"
+                  revealArchiveInOrganizer = "NO">
+               </ArchiveAction>
+            </Scheme>
+            EOF
+          fi
+      
+      - name: Install CocoaPods
+        run: |
+          pod install --project-directory=OpenClaw.xcodeproj
+        continue-on-error: true
+      
+      - name: Build IPA (Unsigned)
+        run: |
+          xcodebuild -project OpenClaw.xcodeproj/project.pbxproj \
+            -scheme OpenClaw \
+            -configuration Debug \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath ./DerivedData \
+            CODE_SIGN_IDENTITY="-" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+      
+      - name: Create IPA
+        run: |
+          APP_PATH="./DerivedData/Build/Products/Debug-iphonesimulator/OpenClaw.app"
+          
+          if [ -d "$APP_PATH" ]; then
+            echo "Creating IPA..."
+            mkdir -p Payload
+            cp -r "$APP_PATH" Payload/
+            zip -r OpenClaw.unsigned.ipa Payload
+            ls -la *.ipa
+          else
+            echo "App not found at $APP_PATH"
+            find ./DerivedData -name "OpenClaw.app" 2>/dev/null
+          fi
+      
+      - name: Upload IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: OpenClaw.unsigned.ipa
+          path: OpenClaw.unsigned.ipa
