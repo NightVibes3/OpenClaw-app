@@ -9,6 +9,26 @@ import Foundation
 import Combine
 import ElevenLabs
 
+enum ConversationError: LocalizedError {
+    case notInTextMode
+    case gatewayNotConfigured
+    case invalidResponse
+    case serverError(Int)
+    
+    var errorDescription: String? {
+        switch self {
+        case .notInTextMode:
+            return "Text mode is not enabled"
+        case .gatewayNotConfigured:
+            return "Gateway URL not configured in settings"
+        case .invalidResponse:
+            return "Invalid response from server"
+        case .serverError(let code):
+            return "Server error: \(code)"
+        }
+    }
+}
+
 enum AppConversationState: Equatable {
     case idle
     case connecting
@@ -139,6 +159,72 @@ final class ConversationManager: ObservableObject {
         }
     }
     
+    // MARK: - Text-Only Mode (No ElevenLabs Required)
+    
+    @Published var textModeEnabled = false
+    
+    /// Send a text message to the gateway (text-only mode)
+    func sendTextMessage(_ text: String) async throws {
+        guard textModeEnabled else {
+            throw ConversationError.notInTextMode
+        }
+        
+        // Add user message
+        let userMessage = ConversationMessage(
+            id: UUID().uuidString,
+            role: .user,
+            content: text,
+            timestamp: Date()
+        )
+        messages.append(userMessage)
+        
+        state = .connecting
+        
+        // Get gateway URL from settings
+        guard let gatewayURL = UserDefaults.standard.string(forKey: "gateway_url"),
+              !gatewayURL.isEmpty else {
+            state = .error("Gateway URL not configured")
+            throw ConversationError.gatewayNotConfigured
+        }
+        
+        let url = URL(string: "\(gatewayURL)/api/text-message")!
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        // Add auth token if available
+        if let token = try? keychainManager.get(.gatewayHookToken) {
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
+        
+        let body: [String: Any] = ["message": text]
+        request.httpBody = try? JSONSerialization.data(withJSONObject: body)
+        
+        let (data, response) = try await URLSession.shared.data(for: request)
+        
+        guard let httpResponse = response as? HTTPURLResponse else {
+            state = .error("Invalid response")
+            throw ConversationError.invalidResponse
+        }
+        
+        if httpResponse.statusCode == 200 {
+            if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+               let reply = json["reply"] as? String {
+                let agentMessage = ConversationMessage(
+                    id: UUID().uuidString,
+                    role: .agent,
+                    content: reply,
+                    timestamp: Date()
+                )
+                messages.append(agentMessage)
+                state = .active
+            }
+        } else {
+            state = .error("HTTP \(httpResponse.statusCode)")
+            throw ConversationError.serverError(httpResponse.statusCode)
+        }
+    }
+    
     func endConversation() async {
         await conversation?.endConversation()
         conversation = nil
@@ -147,6 +233,7 @@ final class ConversationManager: ObservableObject {
         agentState = .listening
         isMuted = false
         state = .idle
+        textModeEnabled = false
     }
     
     func toggleMute() async {

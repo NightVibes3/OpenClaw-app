@@ -155,6 +155,12 @@ final class ConversationViewModel: ObservableObject {
     
     func sendMessage(_ text: String) async {
         guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+        
+        // Enable text mode if no ElevenLabs API key
+        if !keychainManager.hasApiKey() {
+            conversationManager.textModeEnabled = true
+        }
+        
         await conversationManager.sendTextMessage(text)
         textInput = ""
     }

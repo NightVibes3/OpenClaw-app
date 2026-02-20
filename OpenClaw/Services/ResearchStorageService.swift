@@ -13,36 +13,21 @@ import Combine
 final class ResearchStorageService: ObservableObject {
     static let shared = ResearchStorageService()
     
-    private var modelContainer: ModelContainer?
-    private var modelContext: ModelContext?
+    var modelContext: ModelContext?
     
     @Published private(set) var isInitialized = false
     @Published private(set) var initializationError: String?
     
     private init() {
-        setupContainer()
-    }
-    
-    // MARK: - Setup
-    
-    private func setupContainer() {
-        do {
-            let schema = Schema([ResearchProject.self])
-            let config = ModelConfiguration(
-                "ResearchLab",
-                schema: schema,
-                isStoredInMemoryOnly: false,
-                allowsSave: true
-            )
-            
-            modelContainer = try ModelContainer(for: schema, configurations: [config])
-            modelContext = modelContainer?.mainContext
+        // Use the shared container from the App
+        if let container = try? ModelContainer(
+            for: ResearchProject.self,
+            configurations: ModelConfiguration(isStoredInMemoryOnly: false)
+        ) {
+            modelContext = container.mainContext
             isInitialized = true
-            
-            print("[ResearchStorage] Initialized successfully")
-        } catch {
-            initializationError = error.localizedDescription
-            print("[ResearchStorage] Failed to initialize: \(error)")
+        } else {
+            initializationError = "Failed to initialize SwiftData"
         }
     }
     

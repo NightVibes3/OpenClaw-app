@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import SwiftData
 import UIKit
 
 @main
@@ -13,6 +14,16 @@ struct OpenClawApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @StateObject private var appState = AppState.shared
     @StateObject private var pushManager = PushNotificationManager.shared
+    
+    var sharedModelContainer: ModelContainer = {
+        let schema = Schema([ResearchProject.self])
+        let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
+        do {
+            return try ModelContainer(for: schema, configurations: [modelConfiguration])
+        } catch {
+            fatalError("Could not create ModelContainer: \(error)")
+        }
+    }()
     
     var body: some Scene {
         WindowGroup {
@@ -25,6 +36,7 @@ struct OpenClawApp: App {
             }
             .environmentObject(appState)
             .environmentObject(pushManager)
+            .modelContainer(sharedModelContainer)
             .task {
                 // Check notification permission status on launch
                 await pushManager.checkPermissionStatus()
