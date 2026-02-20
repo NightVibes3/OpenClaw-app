@@ -7,6 +7,7 @@
 
 import UserNotifications
 
+@MainActor
 class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
     static let shared = NotificationDelegate()
     
@@ -39,33 +40,31 @@ class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
         let context = openclawData?["context"] as? String
         let message = openclawData?["message"] as? String
         
-        await MainActor.run {
-            switch actionIdentifier {
-            case UNNotificationDefaultActionIdentifier:
-                // User tapped the notification
-                handleNotificationTap(type: notificationType, context: context, message: message)
-                
-            case "START_CHAT_ACTION":
-                // User tapped "Start Voice Chat" action
-                AppState.shared.pendingAction = .startConversation(context: context)
-                
-            case "REPLY_ACTION":
-                // User replied from notification
-                if let textResponse = response as? UNTextInputNotificationResponse {
-                    handleQuickReply(text: textResponse.userText, context: context)
-                }
-                
-            case "SNOOZE_ACTION":
-                // User snoozed the notification
-                scheduleSnooze(originalNotification: response.notification)
-                
-            case UNNotificationDismissActionIdentifier:
-                // User dismissed the notification
-                print("[NotificationDelegate] Notification dismissed")
-                
-            default:
-                print("[NotificationDelegate] Unknown action: \(actionIdentifier)")
+        switch actionIdentifier {
+        case UNNotificationDefaultActionIdentifier:
+            // User tapped the notification
+            handleNotificationTap(type: notificationType, context: context, message: message)
+            
+        case "START_CHAT_ACTION":
+            // User tapped "Start Voice Chat" action
+            AppState.shared.pendingAction = .startConversation(context: context)
+            
+        case "REPLY_ACTION":
+            // User replied from notification
+            if let textResponse = response as? UNTextInputNotificationResponse {
+                handleQuickReply(text: textResponse.userText, context: context)
             }
+            
+        case "SNOOZE_ACTION":
+            // User snoozed the notification
+            scheduleSnooze(originalNotification: response.notification)
+            
+        case UNNotificationDismissActionIdentifier:
+            // User dismissed the notification
+            print("[NotificationDelegate] Notification dismissed")
+            
+        default:
+            print("[NotificationDelegate] Unknown action: \(actionIdentifier)")
         }
     }
     
