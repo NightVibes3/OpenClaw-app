@@ -49,7 +49,7 @@ jobs:
           xcodebuild -project OpenClaw.xcodeproj \
             -scheme OpenClaw \
             -configuration Debug \
-            -destination 'generic/platform=iOS Simulator' \
+            -destination 'generic/platform=iOS' \
             -derivedDataPath ./DerivedData \
             CODE_SIGN_IDENTITY="-" \
             CODE_SIGNING_REQUIRED=NO \
@@ -58,7 +58,8 @@ jobs:
       
       - name: Create IPA
         run: |
-          APP_PATH="./DerivedData/Build/Products/Debug-iphonesimulator/OpenClaw.app"
+          APP_PATH="./DerivedData/Build/Products/Debug-iphoneos/OpenClaw.app"
+          echo "Looking for app in $APP_PATH"
           
           if [ -d "$APP_PATH" ]; then
             echo "Creating IPA..."
