@@ -15,20 +15,6 @@ jobs:
         with:
           fetch-depth: 0
       
-      - name: Checkout Gateway submodule
-        run: |
-          git submodule update --init --recursive
-      
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-      
-      - name: Install Gateway dependencies
-        run: |
-          cd Gateway
-          npm install
-      
       - name: Setup Xcode
         run: |
           xcodebuild -version
