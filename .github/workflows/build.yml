@@ -20,90 +20,24 @@ jobs:
           xcodebuild -version
           xcodegen --version || brew install xcodegen
       
-      - name: Generate scheme if needed
+      - name: Generate scheme
         run: |
-          if [ ! -d "OpenClaw.xcodeproj/xcshareddata/xcschemes" ]; then
-            mkdir -p OpenClaw.xcodeproj/xcshareddata/xcschemes
-            cat > OpenClaw.xcodeproj/xcshareddata/xcschemes/OpenClaw.xcscheme << 'EOF'
-            <?xml version="1.0" encoding="UTF-8"?>
-            <Scheme
-               LastUpgradeVersion = "1500"
-               version = "1.7">
-               <BuildAction
-                  parallelizeBuildables = "YES"
-                  buildImplicitDependencies = "YES">
-                  <BuildActionEntries>
-                     <BuildActionEntry
-                        buildForTesting = "YES"
-                        buildForRunning = "YES"
-                        buildForProfiling = "YES"
-                        buildForArchiving = "YES"
-                        buildForAnalyzing = "YES">
-                        <BuildableReference
-                           BuildableIdentifier = "primary"
-                           BlueprintIdentifier = "CC7FE1C62F351746005622EC"
-                           BuildableName = "OpenClaw.app"
-                           BlueprintName = "OpenClaw"
-                           ReferencedContainer = "container:OpenClaw.xcodeproj">
-                        </BuildableReference>
-                     </BuildActionEntry>
-                  </BuildActionEntries>
-               </BuildAction>
-               <TestAction
-                  buildConfiguration = "Debug"
-                  selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"
-                  selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
-                  shouldUseLaunchSchemeArgsEnv = "YES"
-                  shouldAutocreateTestPlan = "YES">
-               </TestAction>
-               <LaunchAction
-                  buildConfiguration = "Debug"
-                  selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"
-                  selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
-                  launchStyle = "0"
-                  useCustomWorkingDirectory = "NO"
-                  ignoresPersistentStateOnLaunch = "NO"
-                  debugDocumentVersioning = "YES"
-                  debugServiceExtension = "internal"
-                  allowLocationSimulation = "YES">
-                  <BuildableProductRunnable
-                     runnableDebuggingMode = "0">
-                     <BuildableReference
-                        BuildableIdentifier = "primary"
-                        BlueprintIdentifier = "CC7FE1C62F351746005622EC"
-                        BuildableName = "OpenClaw.app"
-                        BlueprintName = "OpenClaw"
-                        ReferencedContainer = "container:OpenClaw.xcodeproj">
-                     </BuildableReference>
-                  </BuildableProductRunnable>
-               </LaunchAction>
-               <ProfileAction
-                  buildConfiguration = "Debug"
-                  shouldUseLaunchSchemeArgsEnv = "YES"
-                  savedToolIdentifier = ""
-                  useCustomWorkingDirectory = "NO"
-                  debugDocumentVersioning = "YES">
-                  <BuildableProductRunnable
-                     runnableDebuggingMode = "0">
-                     <BuildableReference
-                        BuildableIdentifier = "primary"
-                        BlueprintIdentifier = "CC7FE1C62F351746005622EC"
-                        BuildableName = "OpenClaw.app"
-                        BlueprintName = "OpenClaw"
-                        ReferencedContainer = "container:OpenClaw.xcodeproj">
-                     </BuildableReference>
-                  </BuildableProductRunnable>
-               </ProfileAction>
-               <AnalyzeAction
-                  buildConfiguration = "Debug">
-               </AnalyzeAction>
-               <ArchiveAction
-                  buildConfiguration = "Debug"
-                  revealArchiveInOrganizer = "NO">
-               </ArchiveAction>
-            </Scheme>
-            EOF
-          fi
+          mkdir -p OpenClaw.xcodeproj/xcshareddata/xcschemes
+          printf '<?xml version="1.0" encoding="UTF-8"?>
+          <Scheme LastUpgradeVersion="1500" version="1.7">
+            <BuildAction parallelizeBuildables="YES" buildImplicitDependencies="YES">
+              <BuildActionEntries>
+                <BuildActionEntry buildForTesting="YES" buildForRunning="YES" buildForProfiling="YES" buildForArchiving="YES" buildForAnalyzing="YES">
+                  <BuildableReference BuildableIdentifier="primary" BlueprintIdentifier="CC7FE1C62F351746005622EC" BuildableName="OpenClaw.app" BlueprintName="OpenClaw" ReferencedContainer="container:OpenClaw.xcodeproj"/>
+                </BuildActionEntry>
+              </BuildActionEntries>
+            </BuildAction>
+            <TestAction buildConfiguration="Debug" shouldUseLaunchSchemeArgsEnv="YES"/>
+            <LaunchAction buildConfiguration="Debug"/>
+            <ProfileAction buildConfiguration="Debug"/>
+            <AnalyzeAction buildConfiguration="Debug"/>
+            <ArchiveAction buildConfiguration="Debug"/>
+          </Scheme>' > OpenClaw.xcodeproj/xcshareddata/xcschemes/OpenClaw.xcscheme
       
       - name: Install CocoaPods
         run: |
