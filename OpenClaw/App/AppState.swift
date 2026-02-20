@@ -89,7 +89,9 @@ final class AppState: ObservableObject {
     }
     
     func checkConfiguration() {
-        isConfigured = keychainManager.hasAgentId()
+        // Check if user has completed onboarding (either voice or text mode)
+        let hasCompletedOnboarding = UserDefaults.standard.bool(forKey: "hasCompletedOnboarding")
+        isConfigured = keychainManager.hasAgentId() || hasCompletedOnboarding
         showOnboarding = !isConfigured
     }
     

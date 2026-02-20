@@ -72,7 +72,8 @@ final class SettingsViewModel: ObservableObject {
     }
     
     var canSave: Bool {
-        !agentId.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        // Allow saving with empty agentId for text-only mode
+        true
     }
     
     var canSaveBackend: Bool {
@@ -116,14 +117,16 @@ final class SettingsViewModel: ObservableObject {
         let trimmedApiKey = apiKey.trimmingCharacters(in: .whitespacesAndNewlines)
         let trimmedEndpoint = openClawEndpoint.trimmingCharacters(in: .whitespacesAndNewlines)
         
-        guard !trimmedAgentId.isEmpty else {
-            saveError = "Agent ID is required"
-            showSaveError = true
-            return
-        }
+        // Allow empty agentId for text-only mode
+        // Just skip the validation error
         
         do {
-            try keychainManager.save(trimmedAgentId, for: .agentId)
+            if !trimmedAgentId.isEmpty {
+                try keychainManager.save(trimmedAgentId, for: .agentId)
+            } else {
+                // Clear agent ID for text-only mode
+                try? keychainManager.delete(.agentId)
+            }
             
             // Save API key if provided (regardless of toggle - if key is present, use private flow)
             if !trimmedApiKey.isEmpty {
@@ -141,6 +144,9 @@ final class SettingsViewModel: ObservableObject {
             
             // Save gateway hook token
             let trimmedHookToken = gatewayHookToken.trimmingCharacters(in: .whitespacesAndNewlines)
+            
+            // Mark as configured (either voice or text mode)
+            UserDefaults.standard.set(true, forKey: "hasCompletedOnboarding")
             if !trimmedHookToken.isEmpty {
                 try keychainManager.save(trimmedHookToken, for: .gatewayHookToken)
             } else {

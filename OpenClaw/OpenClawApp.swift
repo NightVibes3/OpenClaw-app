@@ -109,6 +109,24 @@ struct OnboardingView: View {
                             .foregroundColor(.white)
                         
                         VStack(spacing: 12) {
+                            // Gateway URL (required for text mode)
+                            TextField("Gateway URL (e.g. https://your-tunnel.loca.lt)", text: $viewModel.openClawEndpoint)
+                                .textFieldStyle(.plain)
+                                .padding()
+                                .background(Color.white.opacity(0.1))
+                                .cornerRadius(12)
+                                .foregroundColor(.white)
+                                .autocapitalization(.none)
+                                .keyboardType(.URL)
+                            
+                            Divider()
+                                .background(Color.white.opacity(0.3))
+                                .padding(.vertical, 8)
+                            
+                            Text("Or configure ElevenLabs for voice:")
+                                .font(.subheadline)
+                                .foregroundColor(.white.opacity(0.7))
+                            
                             TextField("ElevenLabs Agent ID", text: $viewModel.agentId)
                                 .textFieldStyle(.plain)
                                 .padding()
@@ -146,6 +164,20 @@ struct OnboardingView: View {
                         }
                         .disabled(!viewModel.canSave)
                         .padding(.horizontal)
+                        
+                        // Skip button for text-only mode
+                        Button {
+                            // Save with empty agent ID (text-only mode)
+                            viewModel.agentId = ""
+                            viewModel.apiKey = ""
+                            viewModel.isPrivateAgent = false
+                            viewModel.save()
+                        } label: {
+                            Text("Skip - Use Text Only")
+                                .font(.subheadline)
+                                .foregroundColor(.white.opacity(0.7))
+                        }
+                        .padding(.top, 8)
                     }
                     .padding(.vertical, 24)
                     .background(
