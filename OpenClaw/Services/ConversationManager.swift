@@ -172,8 +172,8 @@ final class ConversationManager: ObservableObject {
         // Add user message
         let userMessage = ConversationMessage(
             id: UUID().uuidString,
-            role: .user,
-            content: text,
+            source: .user,
+            message: text,
             timestamp: Date()
         )
         messages.append(userMessage)
@@ -212,8 +212,8 @@ final class ConversationManager: ObservableObject {
                let reply = json["reply"] as? String {
                 let agentMessage = ConversationMessage(
                     id: UUID().uuidString,
-                    role: .agent,
-                    content: reply,
+                    source: .ai,
+                    message: reply,
                     timestamp: Date()
                 )
                 messages.append(agentMessage)
