@@ -13,21 +13,28 @@ import Combine
 final class ResearchStorageService: ObservableObject {
     static let shared = ResearchStorageService()
     
+    // Use in-memory storage to avoid container issues
+    private var modelContainer: ModelContainer?
     var modelContext: ModelContext?
     
     @Published private(set) var isInitialized = false
     @Published private(set) var initializationError: String?
     
     private init() {
-        // Use the shared container from the App
-        if let container = try? ModelContainer(
-            for: ResearchProject.self,
-            configurations: ModelConfiguration(isStoredInMemoryOnly: false)
-        ) {
-            modelContext = container.mainContext
+        setupContainer()
+    }
+    
+    private func setupContainer() {
+        do {
+            let schema = Schema([ResearchProject.self])
+            let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+            modelContainer = try ModelContainer(for: schema, configurations: [config])
+            modelContext = modelContainer?.mainContext
             isInitialized = true
-        } else {
-            initializationError = "Failed to initialize SwiftData"
+            print("[ResearchStorage] Initialized in-memory")
+        } catch {
+            initializationError = error.localizedDescription
+            print("[ResearchStorage] Error: \(error)")
         }
     }
     
