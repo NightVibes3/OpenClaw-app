@@ -164,7 +164,7 @@ final class ConversationManager: ObservableObject {
     @Published var textModeEnabled = false
     
     /// Send a text message to the gateway (text-only mode)
-    func sendTextMessage(_ text: String) async throws {
+    func sendTextOnlyMessage(_ text: String) async throws {
         guard textModeEnabled else {
             throw ConversationError.notInTextMode
         }
