@@ -18,7 +18,7 @@ final class AudioSessionManager {
         try session.setCategory(
             .playAndRecord,
             mode: .voiceChat,
-            options: [.defaultToSpeaker, .allowBluetoothHFP, .allowBluetoothA2DP, .mixWithOthers]
+            options: [.defaultToSpeaker, .allowBluetooth, .mixWithOthers]
         )
         
         try session.setActive(true)
