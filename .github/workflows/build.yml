@@ -46,7 +46,7 @@ jobs:
       
       - name: Build IPA (Unsigned)
         run: |
-          xcodebuild -project OpenClaw.xcodeproj/project.pbxproj \
+          xcodebuild -project OpenClaw.xcodeproj \
             -scheme OpenClaw \
             -configuration Debug \
             -destination 'generic/platform=iOS Simulator' \
