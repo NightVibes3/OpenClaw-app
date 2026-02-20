@@ -161,7 +161,7 @@ final class ConversationViewModel: ObservableObject {
             conversationManager.textModeEnabled = true
         }
         
-        await conversationManager.sendTextOnlyMessage(text)
+        try? await conversationManager.sendTextOnlyMessage(text)
         textInput = ""
     }
     
